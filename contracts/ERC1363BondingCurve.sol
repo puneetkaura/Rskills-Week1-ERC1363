@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
+import "hardhat/console.sol";
+
 import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/ERC1363.sol";
 import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Receiver.sol";
 import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Spender.sol";
@@ -18,14 +20,13 @@ import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contr
 
 /// Sanction can be made by an address can be sactioner , cannot sanction GOD
 /// GOD can change sanctioner
-contract ERC1363BondingCurve is ERC20, ERC1363 {
+contract ERC1363BondingCurve is ERC20, ERC1363, IERC1363Receiver {
     address payable public owner;
-    uint private constant mSlope = 1; //y = mx
-    uint256 public constant basePrice = 0.0001 ether; // 1 ETH  = 10,000 TKN
+    uint256 public constant basePrice = 0.0001 ether; // 1 ETH  = 10,000 CTKN
     uint256 public constant priceIncreasePerToken = 1000 gwei;
 
-    constructor(address _owner) ERC20("CTKN", "CTKN") ERC1363() {
-        owner = payable(_owner);
+    constructor() ERC20("CTKN", "CTKN") ERC1363() {
+        owner = payable(msg.sender);
     }
 
     function getCurrentPrice() public view returns (uint) {
@@ -69,6 +70,7 @@ contract ERC1363BondingCurve is ERC20, ERC1363 {
     function sell(uint _amount) public {
         require(_amount > 0 && _amount < totalSupply(), "Invalid amount");
         uint ethAmount = estimatSellETHAmount(_amount);
+        console.log((ethAmount / 10) ^ 18);
         _burn(msg.sender, _amount);
         (bool success, ) = payable(msg.sender).call{value: ethAmount}("");
         require(success, "Sale failed");
@@ -79,5 +81,26 @@ contract ERC1363BondingCurve is ERC20, ERC1363 {
         (bool success, ) = owner.call{value: address(this).balance}("");
         require(success, "Withdraw failed");
         return success;
+    }
+
+    function onTransferReceived(
+        address spender,
+        address sender,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bytes4) {
+        console.log(spender);
+        console.log(sender);
+        require(amount > 0 && amount <= totalSupply(), "Invalid amount");
+        uint ethAmount = estimatSellETHAmount(amount);
+        console.log((ethAmount / 10) ^ 18);
+        _burn(msg.sender, amount);
+        (bool success, ) = payable(msg.sender).call{value: ethAmount}("");
+        require(success, "Sale failed");
+
+        return
+            bytes4(
+                keccak256("onTransferReceived(address,address,uint256,bytes)")
+            );
     }
 }

@@ -13,6 +13,13 @@ import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contr
 
 /// Missing events - AddressSanctioned, AddressUnscantioned, GodTxfer, AdminUpgrade
 
+/** How it works
+- Admin can sanction/Unsanction any address 
+- God can do what admin can do +++  { tranfer token from any --> any address plus + Change admin }
+- Sanction means - Cannot accept or Send tokens
+- GodTxfer does not need/affect Approvals
+**/
+
 /**
  * @title ERC1363GodMode
  * @dev Token with god mode. A special address is able to transfer tokens between addresses at will.
@@ -31,6 +38,7 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
         address god
     ) ERC20("GMODE", "GMODE") ERC20Capped(SUPPLY_CAP) ERC1363() {
         GOD = god;
+        admin = god;
     }
 
     modifier onlyGOD() {
@@ -54,7 +62,17 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
         _;
     }
 
-    event GodTxfer(address from, address to, uint amount);
+    event GodTxfer(
+        address indexed from,
+        address indexed to,
+        uint indexed amount
+    );
+
+    event AddressSanctioned(address indexed _address, address sanctionedBy);
+
+    event AddressUnscantioned(address indexed _address, address sanctionedBy);
+
+    event AdminChanged(address oldAdmin, address newAdmin);
 
     /**
      * @dev allow any address to mint tokens
@@ -147,5 +165,10 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
             "Sanctioned address detected"
         );
         return super.transferFrom(from, to, amount);
+    }
+
+    function updateAdmin(address newAdmin) external onlyGOD {
+        require(address(0) == newAdmin, "Address 0 cant't be admin");
+        admin = newAdmin;
     }
 }
