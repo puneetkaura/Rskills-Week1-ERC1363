@@ -8,18 +8,16 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "hardhat/console.sol";
 
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/ERC1363.sol";
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Receiver.sol";
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Spender.sol";
+import "erc-payable-token/contracts/token/ERC1363/ERC1363.sol";
+import "erc-payable-token/contracts/token/ERC1363/IERC1363Receiver.sol";
+
+// import "erc-payable-token/contracts/token/ERC1363/IERC1363Spender.sol";
 
 /**
  * @title ERC1363BondingCurve
- * @dev Token with god mode. A special address is able to transfer tokens between addresses at will.
+ * @dev Linear Bonding curve
  * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
  */
-
-/// Sanction can be made by an address can be sactioner , cannot sanction GOD
-/// GOD can change sanctioner
 contract ERC1363BondingCurve is ERC20, ERC1363, IERC1363Receiver {
     address payable public owner;
     uint256 public constant basePrice = 0.0001 ether; // 1 ETH  = 10,000 CTKN

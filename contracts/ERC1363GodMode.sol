@@ -7,11 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/ERC1363.sol";
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Receiver.sol";
-import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contracts/token/ERC1363/IERC1363Spender.sol";
-
-/// Missing events - AddressSanctioned, AddressUnscantioned, GodTxfer, AdminUpgrade
+import "erc-payable-token/contracts/token/ERC1363/ERC1363.sol";
 
 /** How it works
 - Admin can sanction/Unsanction any address 
@@ -22,17 +18,18 @@ import "https://github.com/vittominacori/erc1363-payable-token/blob/master/contr
 
 /**
  * @title ERC1363GodMode
- * @dev Token with god mode. A special address is able to transfer tokens between addresses at will.
+ * @author pkaura
+ * @notice Token with god mode - A special address is able to transfer tokens between addresses at will.
+ * @notice Token with sanctions- A fungible token that allows an admin to ban specified addresses from sending and receiving tokens.
  * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
  */
 
-/// Sanction can be made by an address can be sactioner , cannot sanction GOD
-/// GOD can change sanctioner
 contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
     uint private constant SUPPLY_CAP = 100_000_000;
-    address admin;
-    mapping(address => bool) public isSanctioned;
     address public immutable GOD;
+    address public admin;
+
+    mapping(address => bool) public isSanctioned;
 
     constructor(
         address god
@@ -54,14 +51,9 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
         _;
     }
 
-    modifier notSanctioned(address from, address to) {
-        require(
-            !(isSanctioned[from] || isSanctioned[to]),
-            "Sanctioned address detected"
-        );
-        _;
-    }
-
+    /**
+     * @notice Emitted when God address txfers tokens.
+     */
     event GodTxfer(
         address indexed from,
         address indexed to,
@@ -78,9 +70,12 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
      * @dev allow any address to mint tokens
      * @param _address to sanction
      */
+
     function sanction(address _address) external adminAndAbove {
         require(!(_address == GOD), "GOD can't be sanctioned");
         isSanctioned[_address] = true;
+
+        emit AddressSanctioned(_address, msg.sender);
     }
 
     /**
@@ -90,6 +85,7 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
 
     function unsanction(address _address) external adminAndAbove {
         isSanctioned[_address] = false;
+        emit AddressUnscantioned(_address, msg.sender);
     }
 
     /**
@@ -113,14 +109,9 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
      * @dev god can transfer token to any account from any account
      * @return value of boolean
      */
-    function godTransfer(
-        address from,
-        address to,
-        uint amount
-    ) public onlyGOD returns (bool) {
+    function godTransfer(address from, address to, uint amount) public onlyGOD {
         _transfer(from, to, amount);
         emit GodTxfer(from, to, amount);
-        return true;
     }
 
     /**
@@ -169,6 +160,9 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
 
     function updateAdmin(address newAdmin) external onlyGOD {
         require(address(0) == newAdmin, "Address 0 cant't be admin");
+        address oldAdmin = admin;
         admin = newAdmin;
+
+        emit AdminChanged(oldAdmin, newAdmin);
     }
 }
