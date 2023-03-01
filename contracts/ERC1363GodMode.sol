@@ -9,18 +9,14 @@ import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "erc-payable-token/contracts/token/ERC1363/ERC1363.sol";
 
-/** How it works
-- Admin can sanction/Unsanction any address 
-- God can do what admin can do +++  { tranfer token from any --> any address plus + Change admin }
-- Sanction means - Cannot accept or Send tokens
-- GodTxfer does not need/affect Approvals
-**/
-
 /**
  * @title ERC1363GodMode
  * @author pkaura
  * @notice Token with god mode - A special address is able to transfer tokens between addresses at will.
- * @notice Token with sanctions- A fungible token that allows an admin to ban specified addresses from sending and receiving tokens.
+ * Token with sanctions- A fungible token that allows an admin to ban specified addresses from sending and receiving tokens.
+ * Token with sanctions- A fungible token that allows an admin to ban specified addresses from sending and receiving tokens.
+ * GodTxfer does not need/affect Approvals
+ * Sanction means - Cannot accept or Send tokens
  * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
  */
 
@@ -107,7 +103,6 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
 
     /**
      * @dev god can transfer token to any account from any account
-     * @return value of boolean
      */
     function godTransfer(address from, address to, uint amount) public onlyGOD {
         _transfer(from, to, amount);
@@ -115,13 +110,9 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
     }
 
     /**
-     * @dev See {IERC20-transfer}.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     * - the caller must have a balance of at least `amount`.
+     * @notice - `to` cannot be a sanctioned address
      */
+
     function transfer(
         address to,
         uint256 amount
