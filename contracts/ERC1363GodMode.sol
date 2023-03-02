@@ -150,7 +150,7 @@ contract ERC1363GodMode is ERC20, ERC20Capped, ERC1363 {
     }
 
     function updateAdmin(address newAdmin) external onlyGOD {
-        require(address(0) == newAdmin, "Address 0 cant't be admin");
+        require(address(0) != newAdmin, "Address 0 cant't be admin");
         address oldAdmin = admin;
         admin = newAdmin;
 
